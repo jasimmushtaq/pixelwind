@@ -13,7 +13,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@marsidev/react-turnstile": "^1.6.1",
     "@sentry/react": "^10.71.0",
-    "@supabase/supabase-js": "^2.112.3",
+    "@supabase/supabase-js": "^2.112.4",
     "@tanstack/react-query": "^5.102.1",
     "@tanstack/react-table": "^9.1.2",
     "@types/uuid": "^10.0.0",
