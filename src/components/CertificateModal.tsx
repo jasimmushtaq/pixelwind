@@ -49,7 +49,8 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           textRendering: 'optimizeLegibility'
         }}
       >
-        <img src="/certificate-bg-highres.png" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
+        {/* Blank template — sign & stamp are embedded in this background image */}
+        <img src="/certificate-bg.jpg" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
         
         <div className="absolute top-[110px] left-0 right-0 text-center text-[18px] font-bold z-10 text-red-600">
           ID: {formData.certificate_id}
