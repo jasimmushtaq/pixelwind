@@ -14,7 +14,7 @@
     "@marsidev/react-turnstile": "^1.6.1",
     "@sentry/react": "^10.71.0",
     "@supabase/supabase-js": "^2.112.3",
-    "@tanstack/react-query": "^5.102.1",
+    "@tanstack/react-query": "^5.102.4",
     "@tanstack/react-table": "^9.1.2",
     "@types/uuid": "^10.0.0",
     "clsx": "^2.1.1",
