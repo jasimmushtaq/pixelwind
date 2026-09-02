@@ -98,6 +98,19 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
             />
           </div>
         )}
+
+        {/* High-res signature & stamp overlay — mix-blend-mode:multiply makes white transparent */}
+        <img
+          src="/signature-highres.png"
+          alt="Sign & Stamp"
+          className="absolute z-20 pointer-events-none"
+          style={{
+            left: '240px',
+            top: '498px',
+            width: '340px',
+            mixBlendMode: 'multiply',
+          }}
+        />
       </div>
     </>
   );
@@ -335,7 +348,17 @@ const CertificateGenerator: React.FC = () => {
       // Bottom internship ID — bottom: 148px => y = 816 - 148
       drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
 
-      // 5. Inject Vector QR Code
+      // 5. Inject high-res Signature & Stamp image directly into PDF
+      const sigImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = '/signature-highres.png';
+      });
+      pdf.addImage(sigImg, 'PNG', 240, 498, 340, 170);
+
+      // 6. Inject Vector QR Code
       if (showQR && printRef.current) {
         const qrContainer = printRef.current.querySelector('.qr-wrapper') as HTMLElement;
         if (qrContainer) {

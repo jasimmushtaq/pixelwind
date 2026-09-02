@@ -92,6 +92,19 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
             />
           </div>
         )}
+
+        {/* High-res signature & stamp overlay — mix-blend-mode:multiply makes white transparent */}
+        <img
+          src="/signature-highres.png"
+          alt="Sign & Stamp"
+          className="absolute z-20 pointer-events-none"
+          style={{
+            left: '240px',
+            top: '498px',
+            width: '340px',
+            mixBlendMode: 'multiply',
+          }}
+        />
       </div>
     </>
   );
