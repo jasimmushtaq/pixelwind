@@ -80,8 +80,8 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           ({formData.branch}) &amp; his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
         </div>
         
-        {/* Bottom internship ID */}
-        <div className="absolute bottom-[148px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-20" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
+        {/* Bottom internship ID — sits in the clean space between MANAGING DIRECTOR and logos */}
+        <div className="absolute top-[674px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-20" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           {formData.internship_no}
         </div>
         
@@ -330,8 +330,8 @@ const CertificateGenerator: React.FC = () => {
         { text: '".', font: 'italic' }
       ], 484 + 13.5, 18);
 
-      // Bottom internship ID — bottom: 148px => y = 816 - 148
-      drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
+      // Bottom internship ID — top: 674px => y = 674 + 8.25
+      drawCenterText(formData.internship_no, 674 + 8.25, 11, 'bold', '#dc2626');
 
       // 5. Inject Vector QR Code
       if (showQR && printRef.current) {
