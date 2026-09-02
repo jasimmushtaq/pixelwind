@@ -50,8 +50,8 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
         {/* Blank template — sign & stamp are already embedded in the background image */}
         <img src="/certificate-bg.jpg" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
         
-        {/* Certificate ID */}
-        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-10" style={{ color: '#0a2342', fontFamily: 'sans-serif' }}>
+        {/* Certificate ID — red */}
+        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-10" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           ID: {formData.certificate_id}
         </div>
         
@@ -80,8 +80,8 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           ({formData.branch}) &amp; his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
         </div>
         
-        {/* Bottom internship ID */}
-        <div className="absolute bottom-[98px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-10" style={{ color: '#cc0000', fontFamily: 'sans-serif' }}>
+        {/* Bottom internship ID — sits above the logos row */}
+        <div className="absolute bottom-[148px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-10" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           {formData.internship_no}
         </div>
         
@@ -303,7 +303,7 @@ const CertificateGenerator: React.FC = () => {
       };
 
       // Y coordinates calculated as CSS top + ~font_size*0.75 for baseline approximation
-      drawCenterText(`ID: ${formData.certificate_id}`, 108 + 12.75, 17, 'bold', '#0a2342');
+      drawCenterText(`ID: ${formData.certificate_id}`, 108 + 12.75, 17, 'bold', '#dc2626');
       drawCenterText(formData.name.toUpperCase(), 318 + 28.5, 38, 'bold', '#0a2342');
       
       drawRichText([
@@ -332,8 +332,8 @@ const CertificateGenerator: React.FC = () => {
         { text: '".', font: 'italic' }
       ], 484 + 13.5, 18);
 
-      // Bottom internship ID — bottom: 98px => y = 816 - 98
-      drawCenterText(formData.internship_no, 816 - 98 + 8.25, 11, 'bold', '#cc0000');
+      // Bottom internship ID — bottom: 148px => y = 816 - 148
+      drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
 
       // 5. Inject Vector QR Code
       if (showQR && printRef.current) {

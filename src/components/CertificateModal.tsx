@@ -76,7 +76,7 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           ({formData.branch}) & his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
         </div>
         
-        <div className="absolute bottom-[160px] left-0 right-0 text-center text-[10px] font-bold text-red-600 tracking-wider">
+        <div className="absolute bottom-[148px] left-0 right-0 text-center text-[10px] font-bold text-red-600 tracking-wider z-10">
           {formData.internship_no}
         </div>
         
