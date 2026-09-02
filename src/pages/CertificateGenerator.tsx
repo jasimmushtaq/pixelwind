@@ -25,7 +25,7 @@ const useContainerScale = (containerRef: React.RefObject<HTMLDivElement | null>,
   return scale;
 };
 
-const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ formData, showQR }) => {
+const CertificateContent: React.FC<{ formData: any, showQR: boolean, sealDataUrl: string | null }> = ({ formData, showQR, sealDataUrl }) => {
   const formattedStart = format(new Date(formData.start_date || new Date()), 'dd-MM-yyyy');
   const formattedEnd = format(new Date(formData.end_date || new Date()), 'dd-MM-yyyy');
 
@@ -99,18 +99,12 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           </div>
         )}
 
-        {/* High-res signature & stamp overlay — mix-blend-mode:multiply makes white transparent */}
-        <img
-          src="/signature-highres.png"
-          alt="Sign & Stamp"
-          className="absolute z-20 pointer-events-none"
-          style={{
-            left: '240px',
-            top: '498px',
-            width: '340px',
-            mixBlendMode: 'multiply',
-          }}
-        />
+        {/* Seal & Sign — uploaded by user as transparent PNG */}
+        {sealDataUrl && (
+          <div className="absolute z-20 pointer-events-none" style={{ left: '240px', top: '498px', width: '340px' }}>
+            <img src={sealDataUrl} alt="Seal & Sign" className="w-full h-auto" style={{ mixBlendMode: 'multiply' }} />
+          </div>
+        )}
       </div>
     </>
   );
@@ -140,8 +134,16 @@ const CertificateGenerator: React.FC = () => {
   });
   
   const [showQR, setShowQR] = useState(true);
+  const [sealDataUrl, setSealDataUrl] = useState<string | null>(null);
+  const sealInputRef = useRef<HTMLInputElement>(null);
 
-
+  const handleSealUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setSealDataUrl(ev.target?.result as string); };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchEnrollments();
@@ -348,15 +350,12 @@ const CertificateGenerator: React.FC = () => {
       // Bottom internship ID — bottom: 148px => y = 816 - 148
       drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
 
-      // 5. Inject high-res Signature & Stamp image directly into PDF
-      const sigImg = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = '/signature-highres.png';
-      });
-      pdf.addImage(sigImg, 'PNG', 240, 498, 340, 170);
+      // 5. Inject uploaded Seal & Sign (transparent PNG) into PDF
+      if (sealDataUrl) {
+        const sealImg = new Image();
+        await new Promise((resolve) => { sealImg.onload = resolve; sealImg.src = sealDataUrl; });
+        pdf.addImage(sealImg, 'PNG', 240, 498, 340, 170);
+      }
 
       // 6. Inject Vector QR Code
       if (showQR && printRef.current) {
@@ -467,10 +466,20 @@ const CertificateGenerator: React.FC = () => {
             <input type="text" name="organization" value={formData.organization} onChange={handleChange} className="w-full border rounded-lg p-2" />
           </div>
 
-          {/* Info: sign & stamp are embedded in the template */}
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm font-bold text-green-900 mb-1">✅ Sign &amp; Stamp Included</p>
-            <p className="text-xs text-green-700">The Managing Director signature and official stamp are permanently embedded in the certificate template — they will always be 100% visible on every generated certificate.</p>
+          {/* Seal & Sign Upload */}
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <label className="block text-sm font-bold text-amber-900 mb-2">📎 Upload Seal &amp; Signature</label>
+            <p className="text-xs text-amber-700 mb-3">Upload your transparent PNG seal + signature. It will appear centred on the certificate and in the PDF export.</p>
+            <input ref={sealInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSealUpload} className="hidden" id="seal-upload-input" />
+            <label htmlFor="seal-upload-input" className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-amber-400 bg-white rounded-lg py-3 px-4 cursor-pointer hover:bg-amber-50 transition-colors text-sm font-medium text-amber-800">
+              {sealDataUrl ? '✅ Uploaded — click to replace' : '⬆️ Click to upload your sign & stamp'}
+            </label>
+            {sealDataUrl && (
+              <div className="mt-3 flex items-center gap-3">
+                <img src={sealDataUrl} alt="Preview" className="w-24 h-16 object-contain border rounded-lg bg-gray-50" />
+                <button onClick={() => { setSealDataUrl(null); if (sealInputRef.current) sealInputRef.current.value = ''; }} className="text-xs text-red-600 hover:underline">Remove</button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -503,14 +512,14 @@ const CertificateGenerator: React.FC = () => {
           }} 
           className="shadow-2xl flex-shrink-0"
         >
-          <CertificateContent formData={formData} showQR={showQR} />
+          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
         </div>
       </div>
 
       {/* Off-screen strict rendering target for HTML2Canvas (PNG export / QR extraction) */}
       <div className="absolute" style={{ left: '-9999px', top: '-9999px' }}>
         <div ref={printRef}>
-          <CertificateContent formData={formData} showQR={showQR} />
+          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
         </div>
       </div>
     </div>
