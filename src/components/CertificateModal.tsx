@@ -81,7 +81,7 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
         </div>
         
         {showQR && (
-          <div className="absolute top-[230px] right-[80px] w-[110px] h-[110px] qr-wrapper">
+          <div className="absolute top-[230px] right-[80px] w-[110px] h-[110px] qr-wrapper z-20">
             <QRCodeSVG 
               value={`https://pixelwind.vercel.app/verify/${formData.certificate_id}`} 
               width="100%" 
@@ -92,6 +92,17 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
             />
           </div>
         )}
+
+        {/* White eraser — covers blurry baked-in sign from the JPEG background */}
+        <div className="absolute z-10 bg-white" style={{ left: '168px', top: '488px', width: '400px', height: '210px' }} />
+
+        {/* High-res signature & stamp overlay */}
+        <img
+          src="/signature-highres.png"
+          alt="Managing Director Sign & Stamp"
+          className="absolute pointer-events-none"
+          style={{ left: '168px', top: '488px', width: '400px', zIndex: 11, mixBlendMode: 'multiply' }}
+        />
       </div>
     </>
   );

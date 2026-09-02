@@ -25,7 +25,7 @@ const useContainerScale = (containerRef: React.RefObject<HTMLDivElement | null>,
   return scale;
 };
 
-const CertificateContent: React.FC<{ formData: any, showQR: boolean, sealDataUrl: string | null }> = ({ formData, showQR, sealDataUrl }) => {
+const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ formData, showQR }) => {
   const formattedStart = format(new Date(formData.start_date || new Date()), 'dd-MM-yyyy');
   const formattedEnd = format(new Date(formData.end_date || new Date()), 'dd-MM-yyyy');
 
@@ -47,47 +47,58 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean, sealDataUrl
           textRendering: 'optimizeLegibility'
         }}
       >
-        {/* Blank template — sign & stamp are already embedded in the background image */}
+        {/* Background template */}
         <img src="/certificate-bg.jpg" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
+
+        {/* White eraser — covers the blurry baked-in sign in the JPEG background */}
+        <div className="absolute z-10 bg-white" style={{ left: '168px', top: '488px', width: '400px', height: '210px' }} />
+
+        {/* High-res signature & stamp — mix-blend-mode:multiply makes white transparent */}
+        <img
+          src="/signature-highres.png"
+          alt="Managing Director Sign & Stamp"
+          className="absolute pointer-events-none"
+          style={{ left: '168px', top: '488px', width: '400px', zIndex: 11, mixBlendMode: 'multiply' }}
+        />
         
         {/* Certificate ID — red */}
-        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-10" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
+        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-20" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           ID: {formData.certificate_id}
         </div>
         
-        {/* Student Name — large, centered, bold */}
-        <div className="absolute top-[318px] left-0 right-0 text-center text-[38px] font-bold uppercase tracking-wide z-10" style={{ color: '#0a2342', fontFamily: 'sans-serif' }}>
+        {/* Student Name */}
+        <div className="absolute top-[318px] left-0 right-0 text-center text-[38px] font-bold uppercase tracking-wide z-20" style={{ color: '#0a2342', fontFamily: 'sans-serif' }}>
           {formData.name}
         </div>
         
         {/* S/o line */}
-        <div className="absolute top-[392px] left-0 right-0 text-center text-[18px] z-10" style={{ color: '#000', fontFamily: 'serif' }}>
+        <div className="absolute top-[392px] left-0 right-0 text-center text-[18px] z-20" style={{ color: '#000', fontFamily: 'serif' }}>
           S/o. <span className="font-semibold">{formData.father_name}</span>,
         </div>
         
-        {/* Internship description line 1 */}
-        <div className="absolute top-[424px] left-[140px] right-[140px] text-center text-[18px] italic z-10" style={{ color: '#000', fontFamily: 'serif' }}>
+        {/* Internship line 1 */}
+        <div className="absolute top-[424px] left-[140px] right-[140px] text-center text-[18px] italic z-20" style={{ color: '#000', fontFamily: 'serif' }}>
           Successfully Completed his Internship on "<span className="font-bold not-italic">{formData.course}</span>" from
         </div>
         
         {/* Dates line */}
-        <div className="absolute top-[454px] left-[140px] right-[140px] text-center text-[18px] italic z-10" style={{ fontFamily: 'serif' }}>
+        <div className="absolute top-[454px] left-[140px] right-[140px] text-center text-[18px] italic z-20" style={{ fontFamily: 'serif' }}>
           "<span className="font-bold not-italic" style={{ color: '#cc0000' }}>{formattedStart} to {formattedEnd}</span>" in {formData.organization}.
         </div>
         
         {/* Branch & Grade line */}
-        <div className="absolute top-[484px] left-[140px] right-[140px] text-center text-[18px] italic z-10" style={{ color: '#000', fontFamily: 'serif' }}>
+        <div className="absolute top-[484px] left-[140px] right-[140px] text-center text-[18px] italic z-20" style={{ color: '#000', fontFamily: 'serif' }}>
           ({formData.branch}) &amp; his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
         </div>
         
-        {/* Bottom internship ID — sits above the logos row */}
-        <div className="absolute bottom-[148px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-10" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
+        {/* Bottom internship ID */}
+        <div className="absolute bottom-[148px] left-0 right-0 text-center text-[11px] font-bold tracking-wider z-20" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           {formData.internship_no}
         </div>
         
-        {/* QR Code — top right */}
+        {/* QR Code */}
         {showQR && (
-          <div className="absolute top-[238px] right-[76px] w-[112px] h-[112px] qr-wrapper z-10">
+          <div className="absolute top-[238px] right-[76px] w-[112px] h-[112px] qr-wrapper z-20">
             <QRCodeSVG 
               value={`https://pixelwind.vercel.app/verify/${formData.certificate_id}`} 
               width="100%" 
@@ -96,13 +107,6 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean, sealDataUrl
               bgColor="#ffffff" 
               level="M"
             />
-          </div>
-        )}
-
-        {/* Seal & Sign — uploaded by user as transparent PNG */}
-        {sealDataUrl && (
-          <div className="absolute z-20 pointer-events-none" style={{ left: '240px', top: '498px', width: '340px' }}>
-            <img src={sealDataUrl} alt="Seal & Sign" className="w-full h-auto" style={{ mixBlendMode: 'multiply' }} />
           </div>
         )}
       </div>
@@ -134,16 +138,6 @@ const CertificateGenerator: React.FC = () => {
   });
   
   const [showQR, setShowQR] = useState(true);
-  const [sealDataUrl, setSealDataUrl] = useState<string | null>(null);
-  const sealInputRef = useRef<HTMLInputElement>(null);
-
-  const handleSealUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => { setSealDataUrl(ev.target?.result as string); };
-    reader.readAsDataURL(file);
-  };
 
   useEffect(() => {
     fetchEnrollments();
@@ -350,12 +344,19 @@ const CertificateGenerator: React.FC = () => {
       // Bottom internship ID — bottom: 148px => y = 816 - 148
       drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
 
-      // 5. Inject uploaded Seal & Sign (transparent PNG) into PDF
-      if (sealDataUrl) {
-        const sealImg = new Image();
-        await new Promise((resolve) => { sealImg.onload = resolve; sealImg.src = sealDataUrl; });
-        pdf.addImage(sealImg, 'PNG', 240, 498, 340, 170);
-      }
+      // 5. Inject high-res signature PNG into PDF (draw white rect first to erase blurry bg sign)
+      const sigImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = '/signature-highres.png';
+      });
+      // White eraser rectangle over the blurry baked-in sign
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(168, 488, 400, 210, 'F');
+      // Sharp high-res signature on top
+      pdf.addImage(sigImg, 'PNG', 168, 488, 400, 160);
 
       // 6. Inject Vector QR Code
       if (showQR && printRef.current) {
@@ -466,20 +467,10 @@ const CertificateGenerator: React.FC = () => {
             <input type="text" name="organization" value={formData.organization} onChange={handleChange} className="w-full border rounded-lg p-2" />
           </div>
 
-          {/* Seal & Sign Upload */}
-          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-            <label className="block text-sm font-bold text-amber-900 mb-2">📎 Upload Seal &amp; Signature</label>
-            <p className="text-xs text-amber-700 mb-3">Upload your transparent PNG seal + signature. It will appear centred on the certificate and in the PDF export.</p>
-            <input ref={sealInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSealUpload} className="hidden" id="seal-upload-input" />
-            <label htmlFor="seal-upload-input" className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-amber-400 bg-white rounded-lg py-3 px-4 cursor-pointer hover:bg-amber-50 transition-colors text-sm font-medium text-amber-800">
-              {sealDataUrl ? '✅ Uploaded — click to replace' : '⬆️ Click to upload your sign & stamp'}
-            </label>
-            {sealDataUrl && (
-              <div className="mt-3 flex items-center gap-3">
-                <img src={sealDataUrl} alt="Preview" className="w-24 h-16 object-contain border rounded-lg bg-gray-50" />
-                <button onClick={() => { setSealDataUrl(null); if (sealInputRef.current) sealInputRef.current.value = ''; }} className="text-xs text-red-600 hover:underline">Remove</button>
-              </div>
-            )}
+          {/* Sign & stamp permanently embedded via high-res overlay */}
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <p className="text-sm font-bold text-green-900 mb-1">✅ Sign &amp; Stamp</p>
+            <p className="text-xs text-green-700">The Managing Director signature and official stamp are embedded as a high-resolution overlay — sharp at any zoom level and in PDF export.</p>
           </div>
         </div>
 
@@ -512,14 +503,14 @@ const CertificateGenerator: React.FC = () => {
           }} 
           className="shadow-2xl flex-shrink-0"
         >
-          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
+          <CertificateContent formData={formData} showQR={showQR} />
         </div>
       </div>
 
       {/* Off-screen strict rendering target for HTML2Canvas (PNG export / QR extraction) */}
       <div className="absolute" style={{ left: '-9999px', top: '-9999px' }}>
         <div ref={printRef}>
-          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
+          <CertificateContent formData={formData} showQR={showQR} />
         </div>
       </div>
     </div>
