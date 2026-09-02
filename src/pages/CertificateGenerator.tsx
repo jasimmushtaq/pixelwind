@@ -6,60 +6,106 @@ import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 
-const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ formData, showQR }) => {
+// Custom hook to perfectly scale the preview without pixel stretching
+const useContainerScale = (containerRef: React.RefObject<HTMLDivElement | null>, targetWidth: number, targetHeight: number) => {
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      // Calculate scale to fit with 40px padding
+      const padding = 64; 
+      const scaleX = (width - padding) / targetWidth;
+      const scaleY = (height - padding) / targetHeight;
+      setScale(Math.min(scaleX, scaleY));
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [containerRef, targetWidth, targetHeight]);
+  return scale;
+};
+
+const CertificateContent: React.FC<{ formData: any, showQR: boolean, sealDataUrl: string | null }> = ({ formData, showQR, sealDataUrl }) => {
   const formattedStart = format(new Date(formData.start_date || new Date()), 'dd-MM-yyyy');
   const formattedEnd = format(new Date(formData.end_date || new Date()), 'dd-MM-yyyy');
 
   return (
-    <div 
-      className="relative bg-white shadow-2xl overflow-hidden font-serif"
-      style={{ 
-        width: 1056, 
-        height: 816,
-        backgroundImage: "url('/certificate-bg.jpg')",
-        backgroundSize: '100% 100%',
-        backgroundRepeat: 'no-repeat',
-        color: '#002B49' 
-      }}
-    >
-      <div className="absolute top-[110px] left-0 right-0 text-center text-lg font-bold">
-        ID: {formData.certificate_id}
-      </div>
-      <div className="absolute top-[325px] left-0 right-0 text-center text-[38px] font-bold uppercase tracking-wide">
-        {formData.name}
-      </div>
-      <div className="absolute top-[385px] left-0 right-0 text-center text-[19px]">
-        S/o. <span className="font-medium">{formData.father_name}</span>,
-      </div>
-      <div className="absolute top-[420px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
-        Successfully Completed his Internship on "<span className="font-bold not-italic">{formData.course}</span>" from
-      </div>
-      <div className="absolute top-[450px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
-        "<span className="text-red-600 font-bold not-italic">{formattedStart} to {formattedEnd}</span>" in {formData.organization}.
-      </div>
-      <div className="absolute top-[480px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
-        ({formData.branch}) & his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
-      </div>
-      <div className="absolute bottom-[160px] left-0 right-0 text-center text-[10px] font-bold text-red-600 tracking-wider">
-        {formData.internship_no}
-      </div>
-      {showQR && (
-        <div className="absolute top-[230px] right-[80px] w-[110px] h-[110px]">
-          <QRCodeSVG 
-            value={`https://pixelwindcertify.vercel.app/verify/${formData.certificate_id}`} 
-            width="100%" 
-            height="100%" 
-            fgColor="#000000" 
-            bgColor="#ffffff" 
-          />
+    <>
+      <style>{`
+        @media print {
+          @page { size: landscape; margin: 0; }
+          body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
+      <div 
+        className="relative bg-white shadow-2xl overflow-hidden font-serif"
+        style={{ 
+          width: 1056, 
+          height: 816,
+          color: '#002B49',
+          imageRendering: 'auto',
+          textRendering: 'optimizeLegibility'
+        }}
+      >
+        <img src="/certificate-bg-highres.png" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
+        
+        <div className="absolute top-[110px] left-0 right-0 text-center text-[18px] font-bold z-10 text-red-600">
+          ID: {formData.certificate_id}
         </div>
-      )}
-    </div>
+        
+        <div className="absolute top-[325px] left-0 right-0 text-center text-[38px] font-bold uppercase tracking-wide">
+          {formData.name}
+        </div>
+        
+        <div className="absolute top-[385px] left-0 right-0 text-center text-[19px]">
+          S/o. <span className="font-medium">{formData.father_name}</span>,
+        </div>
+        
+        <div className="absolute top-[420px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
+          Successfully Completed his Internship on "<span className="font-bold not-italic">{formData.course}</span>" from
+        </div>
+        
+        <div className="absolute top-[450px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
+          "<span className="text-red-600 font-bold not-italic">{formattedStart} to {formattedEnd}</span>" in {formData.organization}.
+        </div>
+        
+        <div className="absolute top-[480px] left-[150px] right-[150px] text-center text-[19px] italic leading-relaxed">
+          ({formData.branch}) & his Performance Grade "<span className="font-bold not-italic">{formData.grade}</span>".
+        </div>
+        
+        <div className="absolute bottom-[160px] left-0 right-0 text-center text-[10px] font-bold text-red-600 tracking-wider">
+          {formData.internship_no}
+        </div>
+        
+        {showQR && (
+          <div className="absolute top-[230px] right-[80px] w-[110px] h-[110px] qr-wrapper">
+            <QRCodeSVG 
+              value={`https://pixelwind.vercel.app/verify/${formData.certificate_id}`} 
+              width="100%" 
+              height="100%" 
+              fgColor="#000000" 
+              bgColor="#ffffff" 
+              level="M"
+            />
+          </div>
+        )}
+
+        {/* Seal & Sign uploaded by admin - centered at bottom */}
+        {sealDataUrl && (
+          <div className="absolute z-10 pointer-events-none" style={{ bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '160px' }}>
+            <img src={sealDataUrl} alt="Seal & Sign" className="w-full h-full object-contain" />
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
 const CertificateGenerator: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const scale = useContainerScale(previewContainerRef, 1056, 816);
+  
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [, setLoading] = useState(true);
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState('');
@@ -79,6 +125,18 @@ const CertificateGenerator: React.FC = () => {
   });
   
   const [showQR, setShowQR] = useState(true);
+  const [sealDataUrl, setSealDataUrl] = useState<string | null>(null);
+  const sealInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSealUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setSealDataUrl(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchEnrollments();
@@ -117,7 +175,6 @@ const CertificateGenerator: React.FC = () => {
     const enrollment = enrollments.find(env => env.id === val);
     if (!enrollment) return;
 
-    // Check if they already have a certificate
     const existingCert = enrollment.certificates && enrollment.certificates.length > 0 ? enrollment.certificates[0] : null;
 
     let meta: Record<string, any> = {};
@@ -143,10 +200,49 @@ const CertificateGenerator: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const upsertCertificateToDatabase = async () => {
+    if (!selectedEnrollmentId) return null;
+    
+    let certUUID = formData.internship_id;
+    const metadataStr = JSON.stringify({
+      grade: formData.grade,
+      branch: formData.branch,
+      organization: formData.organization,
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      internship_no: formData.internship_no
+    });
+
+    const { data, error } = await supabase
+      .from('certificates')
+      .upsert({
+        enrollment_id: selectedEnrollmentId,
+        certificate_no: formData.certificate_id,
+        issue_date: format(new Date(), 'yyyy-MM-dd'),
+        template_version: metadataStr
+      }, { onConflict: 'enrollment_id' })
+      .select('id')
+      .single();
+      
+    if (error) {
+       if (error.code === '23505') {
+          alert("A certificate with this ID already exists. Try changing the Certificate ID.");
+       } else {
+          alert("Error saving certificate to database: " + error.message);
+       }
+       return null;
+    }
+    
+    certUUID = data.id;
+    if (formData.internship_id !== certUUID) {
+      setFormData(prev => ({ ...prev, internship_id: certUUID }));
+      fetchEnrollments();
+      await new Promise(resolve => setTimeout(resolve, 800)); 
+    }
+    return certUUID;
   };
 
   const handleSaveAndDownloadPNG = async () => {
@@ -154,7 +250,16 @@ const CertificateGenerator: React.FC = () => {
       alert("Please select a student from the dropdown first so the QR code can be linked correctly to the database!");
       return;
     }
-    await saveCertificateAndExport('png');
+    if (!(await upsertCertificateToDatabase())) return;
+    
+    if (!printRef.current) return;
+    // For PNG export, html2canvas at high scale is best (raster)
+    const canvas = await html2canvas(printRef.current, { scale: 4, useCORS: true, logging: false });
+    const imgData = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = imgData;
+    link.download = `${formData.name}_Certificate.png`;
+    link.click();
   };
 
   const handleSaveAndDownloadPDF = async () => {
@@ -162,92 +267,120 @@ const CertificateGenerator: React.FC = () => {
       alert("Please select a student from the dropdown first so the QR code can be linked correctly to the database!");
       return;
     }
-    await saveCertificateAndExport('pdf');
-  };
-
-  const saveCertificateAndExport = async (formatType: 'png' | 'pdf') => {
-    if (!printRef.current) return;
+    if (!(await upsertCertificateToDatabase())) return;
     
     try {
-
-
-      let certUUID = formData.internship_id;
-      const metadataStr = JSON.stringify({
-        grade: formData.grade,
-        branch: formData.branch,
-        organization: formData.organization,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        internship_no: formData.internship_no
+      // 1. Initialize native vector jsPDF
+      const pdf = new jsPDF('landscape', 'px', [1056, 816]);
+      
+      // 2. Load and draw high-res background image directly
+      const bgImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = '/certificate-bg-highres.png';
       });
+      pdf.addImage(bgImg, 'PNG', 0, 0, 1056, 816);
 
-      // Always upsert to ensure metadata (grade, branch) is updated if they change it
-      const { data, error } = await supabase
-        .from('certificates')
-        .upsert({
-          enrollment_id: selectedEnrollmentId,
-          certificate_no: formData.certificate_id,
-          issue_date: format(new Date(), 'yyyy-MM-dd'),
-          template_version: metadataStr
-        }, { onConflict: 'enrollment_id' })
-        .select('id')
-        .single();
+      // 3. Draw Vector Text Helper
+      const drawCenterText = (text: string, y: number, size: number, fontStyle: 'normal'|'bold'|'italic' = 'normal', color = '#002B49') => {
+        pdf.setFont('times', fontStyle);
+        pdf.setFontSize(size * 0.75); // Convert px to pt
+        pdf.setTextColor(color);
+        pdf.text(text, 528, y, { align: 'center' });
+      };
+
+      // 4. Draw Rich Vector Text Helper for mixed styles inline
+      const drawRichText = (parts: {text: string, font: 'normal'|'bold'|'italic', color?: string}[], y: number, fontSize: number) => {
+        pdf.setFontSize(fontSize * 0.75);
+        let totalWidth = 0;
+        parts.forEach(p => {
+          pdf.setFont('times', p.font);
+          totalWidth += pdf.getTextWidth(p.text);
+        });
         
-      if (error) {
-         if (error.code === '23505') {
-            alert("A certificate with this ID already exists. Try changing the Certificate ID.");
-         } else {
-            alert("Error saving certificate to database: " + error.message);
-         }
-         console.error(error);
-         return;
+        let currentX = 528 - (totalWidth / 2); // Center alignment calculation
+        
+        parts.forEach(p => {
+          pdf.setFont('times', p.font);
+          pdf.setTextColor(p.color || '#002B49');
+          pdf.text(p.text, currentX, y);
+          currentX += pdf.getTextWidth(p.text);
+        });
+      };
+
+      // Y coordinates calculated as CSS top + ~font_size*0.75 for baseline approximation
+      drawCenterText(`ID: ${formData.certificate_id}`, 110 + 13.5, 18, 'bold', '#dc2626');
+      drawCenterText(formData.name.toUpperCase(), 325 + 28.5, 38, 'bold');
+      
+      drawRichText([
+        { text: 'S/o. ', font: 'normal' },
+        { text: formData.father_name + ',', font: 'bold' } // Emulate font-medium
+      ], 385 + 14.25, 19);
+
+      drawRichText([
+        { text: 'Successfully Completed his Internship on "', font: 'italic' },
+        { text: formData.course, font: 'bold' },
+        { text: '" from', font: 'italic' }
+      ], 420 + 14.25, 19);
+
+      const formattedStart = format(new Date(formData.start_date || new Date()), 'dd-MM-yyyy');
+      const formattedEnd = format(new Date(formData.end_date || new Date()), 'dd-MM-yyyy');
+      drawRichText([
+        { text: '"', font: 'italic' },
+        { text: `${formattedStart} to ${formattedEnd}`, font: 'bold', color: '#dc2626' }, // red-600
+        { text: '" in ', font: 'italic' },
+        { text: formData.organization + '.', font: 'italic' }
+      ], 450 + 14.25, 19);
+
+      drawRichText([
+        { text: `(${formData.branch}) & his Performance Grade "`, font: 'italic' },
+        { text: formData.grade, font: 'bold' },
+        { text: '".', font: 'italic' }
+      ], 480 + 14.25, 19);
+
+      drawCenterText(formData.internship_no, 656 + 7.5, 10, 'bold', '#dc2626');
+
+      // 5. Inject Vector QR Code
+      if (showQR && printRef.current) {
+        const qrContainer = printRef.current.querySelector('.qr-wrapper') as HTMLElement;
+        if (qrContainer) {
+          // Temporarily rasterize just the QR wrapper at super high resolution to embed perfectly
+          const qrCanvas = await html2canvas(qrContainer, { scale: 8, logging: false });
+          const qrImgData = qrCanvas.toDataURL('image/png');
+          pdf.addImage(qrImgData, 'PNG', 1056 - 80 - 110, 230, 110, 110);
+        }
       }
-      
-      certUUID = data.id;
-      
-      // Update local state so QR code renders the real UUID
-      if (formData.internship_id !== certUUID) {
-        setFormData(prev => ({ ...prev, internship_id: certUUID }));
-        // Re-fetch enrollments so next time we select this person, we know they have a cert
-        fetchEnrollments();
-        // Wait for React to re-render the QR code with the new UUID before capturing
-        await new Promise(resolve => setTimeout(resolve, 800)); 
+
+      // 6. Inject uploaded Seal & Sign image in center (if any)
+      if (sealDataUrl) {
+        const sealImg = new Image();
+        await new Promise((resolve) => {
+          sealImg.onload = resolve;
+          sealImg.src = sealDataUrl;
+        });
+        // Draw 160x160 centered, bottom: 80px
+        pdf.addImage(sealImg, 'PNG', (1056 / 2) - 80, 816 - 80 - 160, 160, 160);
       }
-      
-      // Export canvas
-      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      
-      if (formatType === 'png') {
-        const link = document.createElement('a');
-        link.href = imgData;
-        link.download = `${formData.name}_Certificate.png`;
-        link.click();
-      } else {
-        const pdf = new jsPDF('landscape', 'px', [1056, 816]);
-        pdf.addImage(imgData, 'PNG', 0, 0, 1056, 816);
-        pdf.save(`${formData.name}_Certificate.pdf`);
-      }
-      
+
+      pdf.save(`${formData.name}_Certificate.pdf`);
     } catch (err) {
-      console.error('Error generating export', err);
-      alert('Failed to generate export.');
+      console.error('Error generating vector PDF', err);
+      alert('Failed to generate high-resolution PDF.');
     }
   };
-
-  const scale = 0.6; // Scale down for preview
 
   return (
     <div className="flex h-[calc(100vh-100px)] gap-6 font-sans">
       {/* Left: Input Form */}
-      <div className="w-[450px] bg-white rounded-xl shadow-lg border p-6 overflow-y-auto">
+      <div className="w-[450px] bg-white rounded-xl shadow-lg border p-6 overflow-y-auto shrink-0">
         <div className="flex items-center gap-3 mb-6">
           <Layers className="text-blue-600" />
           <h2 className="text-xl font-bold text-gray-900">Generate Certificate</h2>
         </div>
         
         <div className="space-y-4">
-          
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <label className="block text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
               <Database size={16} /> Select Student (Database)
@@ -329,6 +462,35 @@ const CertificateGenerator: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
             <input type="text" name="organization" value={formData.organization} onChange={handleChange} className="w-full border rounded-lg p-2" />
           </div>
+
+          {/* Seal & Sign Upload */}
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <label className="block text-sm font-bold text-amber-900 mb-2">📎 Upload Seal &amp; Signature</label>
+            <p className="text-xs text-amber-700 mb-3">Upload a transparent PNG of your seal + signature. It will appear centered at the bottom of the certificate.</p>
+            <input
+              ref={sealInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleSealUpload}
+              className="hidden"
+              id="seal-upload-input"
+            />
+            <label
+              htmlFor="seal-upload-input"
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-amber-400 bg-white rounded-lg py-3 px-4 cursor-pointer hover:bg-amber-50 transition-colors text-sm font-medium text-amber-800"
+            >
+              {sealDataUrl ? '✅ Seal uploaded — click to replace' : '⬆️ Click to upload seal image'}
+            </label>
+            {sealDataUrl && (
+              <div className="mt-3 flex items-center gap-3">
+                <img src={sealDataUrl} alt="Seal preview" className="w-16 h-16 object-contain border rounded-lg bg-gray-50" />
+                <button
+                  onClick={() => { setSealDataUrl(null); if (sealInputRef.current) sealInputRef.current.value = ''; }}
+                  className="text-xs text-red-600 hover:underline"
+                >Remove</button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-8 space-y-3">
@@ -336,27 +498,38 @@ const CertificateGenerator: React.FC = () => {
             <Download size={18} /> Save & Download PNG
           </button>
           <button onClick={handleSaveAndDownloadPDF} className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-medium transition-colors">
-            <FileDown size={18} /> Save & Download PDF
+            <FileDown size={18} /> Save Vector PDF (Print Ready)
           </button>
         </div>
       </div>
 
-      {/* Right: Preview (Scaled) */}
-      <div className="flex-1 bg-gray-200 border rounded-xl overflow-hidden flex items-center justify-center relative p-8">
-        <div className="absolute top-4 right-4 z-10 bg-black/50 text-white px-3 py-1 rounded text-sm font-medium">
-          Live Preview
+      {/* Right: Perfect Responsive Vector Preview */}
+      <div 
+        ref={previewContainerRef}
+        className="flex-1 bg-gray-200 border border-gray-300 rounded-xl overflow-hidden flex items-center justify-center relative"
+      >
+        <div className="absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-widest shadow-lg">
+          High-Res Preview
         </div>
         
-        {/* On-screen Scaled Preview */}
-        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-          <CertificateContent formData={formData} showQR={showQR} />
+        {/* Dynamic Scale Wrapper ensures pixel-perfect aspect ratio matching without blurring */}
+        <div 
+          style={{ 
+            width: 1056, 
+            height: 816, 
+            transform: `scale(${scale})`, 
+            transformOrigin: 'center center'
+          }} 
+          className="shadow-2xl flex-shrink-0"
+        >
+          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
         </div>
       </div>
 
-      {/* Off-screen Unscaled version for html2canvas to fix squished text bug */}
+      {/* Off-screen strict rendering target for HTML2Canvas (PNG export / QR extraction) */}
       <div className="absolute" style={{ left: '-9999px', top: '-9999px' }}>
         <div ref={printRef}>
-          <CertificateContent formData={formData} showQR={showQR} />
+          <CertificateContent formData={formData} showQR={showQR} sealDataUrl={sealDataUrl} />
         </div>
       </div>
     </div>

@@ -80,6 +80,8 @@
     margin: 0; /* Hides browser headers and footers (timestamps, URL) */
   }
   body {
-    margin: 1.6cm; /* Add some margin back to the content */
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

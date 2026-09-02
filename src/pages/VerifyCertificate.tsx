@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+
 import { format } from 'date-fns';
 import { Check, XCircle } from 'lucide-react';
 
@@ -16,58 +16,25 @@ export default function VerifyCertificate() {
       try {
         if (!id) throw new Error("No ID provided");
         
-        let foundCert = null;
-
-        // 1. Try searching by certificate_no (the public readable ID)
-        const { data: certByNo } = await supabase
-          .from('certificates')
-          .select(`
-            *,
-            enrollments (
-              start_date,
-              end_date,
-              students (full_name, student_id, father_name),
-              courses (course_name)
-            )
-          `)
-          .eq('certificate_no', id)
-          .single();
-
-        if (certByNo) {
-          foundCert = certByNo;
-        } else {
-          // 2. If not found, and ID is a valid UUID, fallback to searching by internal UUID for backward compatibility
-          const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
-          
-          if (isUUID) {
-            const { data: certById } = await supabase
-              .from('certificates')
-              .select(`
-                *,
-                enrollments (
-                  start_date,
-                  end_date,
-                  students (full_name, student_id, father_name),
-                  courses (course_name)
-                )
-              `)
-              .eq('id', id)
-              .single();
-              
-            if (certById) foundCert = certById;
+        // Fetch securely through our Vercel Serverless Function to bypass RLS
+        const response = await fetch(`/api/verify?id=${id}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError(true);
+            return;
           }
+          throw new Error('Failed to verify certificate');
         }
 
-        if (!foundCert) {
-          setError(true);
-        } else {
-          setCertificate(foundCert);
-          if (foundCert.template_version) {
-            try {
-              setMeta(JSON.parse(foundCert.template_version));
-            } catch (e) {
-              console.error("Failed to parse metadata", e);
-            }
+        const foundCert = await response.json();
+        
+        setCertificate(foundCert);
+        if (foundCert.template_version) {
+          try {
+            setMeta(JSON.parse(foundCert.template_version));
+          } catch (e) {
+            console.error("Failed to parse metadata", e);
           }
         }
       } catch (err) {

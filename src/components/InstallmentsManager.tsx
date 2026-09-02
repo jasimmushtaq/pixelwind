@@ -154,7 +154,8 @@ export default function InstallmentsManager({ enrollment }: { enrollment: any })
               {/* Receipt Modal */}
               {showPayModal === `receipt-${inst.id}` && (
                 <InvoiceModal 
-                  installment={inst} 
+                  installment={inst}
+                  installments={installments}
                   enrollment={enrollment} 
                   onClose={() => setShowPayModal(null)} 
                 />
