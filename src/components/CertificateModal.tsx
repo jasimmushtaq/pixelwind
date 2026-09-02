@@ -49,8 +49,8 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           textRendering: 'optimizeLegibility'
         }}
       >
-        {/* Blank template — sign & stamp are embedded in this background image */}
-        <img src="/certificate-bg.jpg" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
+        {/* Blank template — sign & stamp are sharp and embedded in this background image */}
+        <img src="/certificate-bg-sharp.png" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
         
         <div className="absolute top-[110px] left-0 right-0 text-center text-[18px] font-bold z-10 text-red-600">
           ID: {formData.certificate_id}
@@ -92,17 +92,6 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
             />
           </div>
         )}
-
-        {/* White eraser — covers blurry baked-in sign from the JPEG background */}
-        <div className="absolute z-10 bg-white" style={{ left: '168px', top: '488px', width: '400px', height: '210px' }} />
-
-        {/* High-res signature & stamp overlay */}
-        <img
-          src="/signature-highres.png"
-          alt="Managing Director Sign & Stamp"
-          className="absolute pointer-events-none"
-          style={{ left: '168px', top: '488px', width: '400px', zIndex: 11, mixBlendMode: 'multiply' }}
-        />
       </div>
     </>
   );

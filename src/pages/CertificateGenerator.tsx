@@ -47,22 +47,11 @@ const CertificateContent: React.FC<{ formData: any, showQR: boolean }> = ({ form
           textRendering: 'optimizeLegibility'
         }}
       >
-        {/* Background template */}
-        <img src="/certificate-bg.jpg" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
-
-        {/* White eraser — covers the blurry baked-in sign in the JPEG background */}
-        <div className="absolute z-10 bg-white" style={{ left: '168px', top: '488px', width: '400px', height: '210px' }} />
-
-        {/* High-res signature & stamp — mix-blend-mode:multiply makes white transparent */}
-        <img
-          src="/signature-highres.png"
-          alt="Managing Director Sign & Stamp"
-          className="absolute pointer-events-none"
-          style={{ left: '168px', top: '488px', width: '400px', zIndex: 11, mixBlendMode: 'multiply' }}
-        />
+        {/* Sharp Background template with high-res signature & stamp built-in */}
+        <img src="/certificate-bg-sharp.png" alt="Certificate Background" className="absolute inset-0 w-full h-full object-cover z-0" />
         
         {/* Certificate ID — red */}
-        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-20" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
+        <div className="absolute top-[108px] left-0 right-0 text-center text-[17px] font-bold z-10" style={{ color: '#dc2626', fontFamily: 'sans-serif' }}>
           ID: {formData.certificate_id}
         </div>
         
@@ -274,13 +263,13 @@ const CertificateGenerator: React.FC = () => {
       // 1. Initialize native vector jsPDF
       const pdf = new jsPDF('landscape', 'px', [1056, 816]);
       
-      // 2. Load and draw high-res background image directly
+      // 2. Load and draw high-res background image directly (contains sharp signature and stamp)
       const bgImg = await new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
         img.onload = () => resolve(img);
         img.onerror = reject;
-        img.src = '/certificate-bg.jpg';
+        img.src = '/certificate-bg-sharp.png';
       });
       pdf.addImage(bgImg, 'PNG', 0, 0, 1056, 816);
 
@@ -344,21 +333,7 @@ const CertificateGenerator: React.FC = () => {
       // Bottom internship ID — bottom: 148px => y = 816 - 148
       drawCenterText(formData.internship_no, 816 - 148 + 8.25, 11, 'bold', '#dc2626');
 
-      // 5. Inject high-res signature PNG into PDF (draw white rect first to erase blurry bg sign)
-      const sigImg = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = '/signature-highres.png';
-      });
-      // White eraser rectangle over the blurry baked-in sign
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(168, 488, 400, 210, 'F');
-      // Sharp high-res signature on top
-      pdf.addImage(sigImg, 'PNG', 168, 488, 400, 160);
-
-      // 6. Inject Vector QR Code
+      // 5. Inject Vector QR Code
       if (showQR && printRef.current) {
         const qrContainer = printRef.current.querySelector('.qr-wrapper') as HTMLElement;
         if (qrContainer) {
