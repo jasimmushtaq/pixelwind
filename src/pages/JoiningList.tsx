@@ -57,6 +57,58 @@ export default function JoiningList() {
     return matchesSearch;
   });
 
+  const handleExportCSV = () => {
+    if (filteredList.length === 0) {
+      alert('No data available to export.');
+      return;
+    }
+
+    const headers = [
+      'Student Name',
+      'Student ID',
+      'Phone',
+      'Email',
+      'Course Enrolled',
+      'Enrollment No',
+      'Joining Date',
+      'Status'
+    ];
+
+    const escapeCsv = (str: any) => {
+      if (str === null || str === undefined) return '""';
+      const val = String(str).replace(/"/g, '""');
+      return `"${val}"`;
+    };
+
+    const rows = filteredList.map(enr => {
+      const student = enr.students || {};
+      const course = enr.courses || {};
+      const joiningDate = enr.created_at ? format(new Date(enr.created_at), 'dd-MM-yyyy') : '';
+
+      return [
+        escapeCsv(student.full_name || ''),
+        escapeCsv(student.student_id || ''),
+        escapeCsv(student.phone || ''),
+        escapeCsv(student.email || ''),
+        escapeCsv(course.course_name || ''),
+        escapeCsv(enr.enrollment_no || ''),
+        escapeCsv(joiningDate),
+        escapeCsv('ACTIVE')
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Joining_List_Active_Rosters_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -67,7 +119,10 @@ export default function JoiningList() {
           </h1>
           <p className="text-gray-500 text-sm mt-1">View and manage currently active students by course.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition font-medium text-sm">
+        <button 
+          onClick={handleExportCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition font-medium text-sm cursor-pointer"
+        >
           <Download size={16} />
           Export CSV
         </button>
